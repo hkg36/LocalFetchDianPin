@@ -8,23 +8,11 @@ __author__ = 'Liao Xuefeng (askxuefeng@gmail.com)'
 Python client SDK for sina weibo API using OAuth 2.
 '''
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
+import ujson
 import time
 import urllib
 import urllib2
 import logging
-
-def _obj_hook(pairs):
-    '''
-    convert json object to python object.
-    '''
-    o = JsonObject()
-    for k, v in pairs.iteritems():
-        o[str(k)] = v
-    return o
 
 class APIError(StandardError):
     '''
@@ -38,16 +26,6 @@ class APIError(StandardError):
 
     def __str__(self):
         return 'APIError: %s: %s, request: %s' % (self.error_code, self.error, self.request)
-
-class JsonObject(dict):
-    '''
-    general json object that can bind any fields but also act as a dict.
-    '''
-    def __getattr__(self, attr):
-        return self[attr]
-
-    def __setattr__(self, attr, value):
-        self[attr] = value
 
 def _encode_params(**kw):
     '''
@@ -125,7 +103,7 @@ def _http_call(url, method, authorization, **kw):
         req.add_header('Content-Type', 'multipart/form-data; boundary=%s' % boundary)
     resp = urllib2.urlopen(req)
     body = resp.read()
-    r = json.loads(body, object_hook=_obj_hook)
+    r = ujson.loads(body)
     if hasattr(r, 'error_code'):
         raise APIError(r.error_code, getattr(r, 'error', ''), getattr(r, 'request', ''))
     return r
@@ -189,7 +167,7 @@ class APIClient(object):
                 client_secret = self.client_secret, \
                 redirect_uri = redirect, \
                 code = code, grant_type = 'authorization_code')
-        r.expires_in += int(time.time())
+        r['expires_in'] += int(time.time())
         return r
 
     def is_expires(self):

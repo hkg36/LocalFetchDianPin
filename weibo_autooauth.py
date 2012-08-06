@@ -2,11 +2,11 @@ import weibo_api
 import urllib2
 import urllib
 import re
+import ujson
 import pickle
 from StringIO import StringIO
 import cStringIO
 from http_tool_box import *
-
 class MyHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
     def http_error_302(self, req, fp, code, msg, headers):
         raise urllib2.HTTPError(req.get_full_url(),code,msg,headers,fp)
@@ -58,10 +58,7 @@ if res_location!=None:
 if oauth_code!=None:
     client = weibo_api.APIClient(app_key=APP_KEY, app_secret=APP_SECRET,redirect_uri=CALLBACK_URL)
     r = client.request_access_token(oauth_code)
-    rdict=dict(r)
-    strio=StringIO();
-    pickle.dump(rdict,strio,pickle.HIGHEST_PROTOCOL)
-    strio.seek(0)
-    r2=pickle.load(strio)
-    client.set_access_token(r.access_token, r.expires_in)
-    uid=string.atoi(r.uid)
+    client.set_access_token(r['access_token'], r['expires_in'])
+    uid=string.atoi(r['uid'])
+
+    print ujson.dumps(r)
