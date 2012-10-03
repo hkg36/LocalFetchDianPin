@@ -1,7 +1,7 @@
 #coding=utf-8
 import sqlite3
 import math
-
+import os
 class TPoint:
     def __init__(self,x,y):
         self.x=float(x)
@@ -33,7 +33,7 @@ class MinRound:
                 self.r=MinRound.distance(self.d,self.a[k]);
             else:
                 t1=MinRound.distance(p,q);
-                t2=MinRound.distance(self.q,self.a[k]);
+                t2=MinRound.distance(q,self.a[k]);
                 t3=MinRound.distance(p,self.a[k]);
                 if t1>=t2 and t1>=t3:
                     self.d.x=(p.x+q.x)/2.0
@@ -71,8 +71,7 @@ class MinRound:
             else:
                 self.MiniDiscWithPoint(self.a[i],i);
         return (self.d.x,self.d.y,self.r);
-mr=MinRound()
-print mr.Run([TPoint(15310,13216),TPoint(2982,15573),TPoint(22131,14152),TPoint(11313,26094),TPoint(4925,20459),TPoint(3971,25989),TPoint(1038,27125),TPoint(18985,12423),TPoint(29294,28643),TPoint(1916,17526),TPoint(10026,853),TPoint(11883,18710),TPoint(21825,19557),TPoint(17274,31338),TPoint(11265,21304),TPoint(11275,28382),TPoint(21614,6098),TPoint(14044,3526),TPoint(24035,23599),TPoint(3538,18951)])
+
 db=sqlite3.connect('../fetchDianPin/AreaShop.db')
 dc=db.cursor()
 dc.execute('select tags from mastershop group by tags')
@@ -85,3 +84,64 @@ for line in all_tag:
     for shopname,lat,lng in dc:
         points.append({'name':shopname,'point':(lat,lng)})
 dc.close()
+print len(all_tag)
+def RunLineRound(line):
+    points=line['points']
+    pl=[]
+    for p in points:
+        ll=p['point']
+        pl.append(TPoint(ll[0],ll[1]))
+    mr=MinRound()
+    return mr.Run(pl)
+for line in all_tag:
+    pr=RunLineRound(line)
+    line['round']=pr
+
+new_all_tag=[]
+for line in all_tag:
+    if line['round'][2]>0.01:
+        points=line['points'][:]
+
+        newcenter=[]
+        while len(points)>0:
+            nc={'c':points[0],'l':[]}
+            pt=points[0]['point']
+            newcenter.append(nc)
+            point_rm=[]
+            del points[0]
+            for i in range(0,len(points)):
+                nowpt=points[i]
+                nowpt_p=nowpt['point']
+                dis=math.sqrt( (pt[0]-nowpt_p[0])**2+(pt[1]-nowpt_p[1])**2 )
+                if dis<0.01:
+                    nc['l'].append(nowpt)
+                    point_rm.append(nowpt)
+                elif dis <0.015:
+                    nc['l'].append(nowpt)
+            for rm in point_rm:
+                points.remove(rm)
+        for c in newcenter:
+            center=c['c']
+            list=c['l'][:]
+            list.append(center)
+            new_line={'tag':line['tag'],'points':list}
+            new_all_tag.append(new_line)
+    else:
+        new_all_tag.append(line)
+
+print len(new_all_tag)
+for line in new_all_tag:
+    pr=RunLineRound(line)
+    line['round']=pr
+    if pr[2]>0.012:
+        print pr
+
+pointdbfile='../fetchDianPin/GeoPointList.db'
+if os.path.isfile(pointdbfile):
+    os.remove(pointdbfile)
+db=sqlite3.connect(pointdbfile)
+db.execute('CREATE TABLE GeoWeiboPoint ( id INTEGER PRIMARY KEY,tag varchar(128),lat FLOAT,lng FLOAT,last_checktime INT DEFAULT 0)')
+db.commit()
+for line in new_all_tag:
+    db.execute('insert into GeoWeiboPoint(tag,lat,lng) values(?,?,?)',(line['tag'],line['round'][0],line['round'][1]))
+db.commit()
