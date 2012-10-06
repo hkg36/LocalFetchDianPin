@@ -19,21 +19,16 @@ def proc_MapPage(shopId):
         try:
             domtree = getUrlDomTree(url)
             break
+        except urllib2.HTTPError,e:
+            if e.code/100==4:
+                conn_task.execute('update shopIds set proced=1,time=CURRENT_TIMESTAMP where id=?',(shopId,))
+                conn_task.commit()
+                return
+            if e.code/100==5:
+                sleepWait+=5
+                sleepWait=min(sleepWait,60)
+                time.sleep(sleepWait)
         except Exception, e:
-            if isinstance(e,urllib2.HTTPError):
-                if e.code/100==4:
-                    conn_task.execute('update shopIds set proced=1,time=CURRENT_TIMESTAMP where id=?',(shopId,))
-                    conn_task.commit()
-                    return
-                if e.code/100==5:
-                    sleepWait+=3*60
-                    if sleepWait>9*60:
-                        sleepWait=9*60
-            else:
-                sleepWait=10
-            print url
-            print e
-            time.sleep(sleepWait)
             continue
 
     html_root = FindSubNode(domtree, 'html')

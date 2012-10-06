@@ -79,7 +79,7 @@ def getUrlDomTree(url,ref=None):
     request.add_header('User-Agent', 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.19 (KHTML, like Gecko) Chrome/18.0.1025.162 Safari/535.19')
     if ref!=None:
         request.add_header('Referer',ref)
-    response = urllib2.urlopen(request,timeout=20)
+    response = urllib2.urlopen(request,timeout=5)
     content = ReadHttpBody(response)
 
     ct_str = response.info().get('Content-Type')
@@ -154,16 +154,17 @@ def proc_Category(a,r):
         url = 'http://www.dianping.com/search/category/%d/0/r%dp%d' % \
             (a,r,p)
 
-        sleepWait=5
+        sleepWait=0
         while True:
             try:
                 domtree = getUrlDomTree(url)
                 break
             except Exception, e:
-                sleepWait*=2
+                sleepWait=min(sleepWait,60)
                 print url
                 print e
                 time.sleep(sleepWait)
+                sleepWait+=10
 
         searchList = None
         for node in iter(domtree):
@@ -188,6 +189,9 @@ def proc_Category(a,r):
                     max_page=find_max_page
                     print 'max page=%d'%max_page
                     break
+            if max_page==51:
+                max_page=1
+                print 'no more page'
 
         if searchList == None:
             return
