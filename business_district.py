@@ -99,7 +99,7 @@ for line in all_tag:
 
 new_all_tag=[]
 for line in all_tag:
-    if line['round'][2]>0.01:
+    if line['round'][2]>0.05:
         points=line['points'][:]
 
         newcenter=[]
@@ -113,10 +113,10 @@ for line in all_tag:
                 nowpt=points[i]
                 nowpt_p=nowpt['point']
                 dis=math.sqrt( (pt[0]-nowpt_p[0])**2+(pt[1]-nowpt_p[1])**2 )
-                if dis<0.01:
+                if dis<0.045:
                     nc['l'].append(nowpt)
                     point_rm.append(nowpt)
-                elif dis <0.015:
+                elif dis <0.05:
                     nc['l'].append(nowpt)
             for rm in point_rm:
                 points.remove(rm)
@@ -133,7 +133,7 @@ print len(new_all_tag)
 for line in new_all_tag:
     pr=RunLineRound(line)
     line['round']=pr
-    if pr[2]>0.012:
+    if pr[2]>0.04:
         print pr
 
 pointdbfile='../fetchDianPin/GeoPointList.db'

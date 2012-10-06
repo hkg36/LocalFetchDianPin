@@ -154,13 +154,13 @@ def proc_Category(a,r):
         url = 'http://www.dianping.com/search/category/%d/0/r%dp%d' % \
             (a,r,p)
 
-        sleepWait=0
+        sleepWait=5
         while True:
             try:
                 domtree = getUrlDomTree(url)
                 break
             except Exception, e:
-                sleepWait+=60
+                sleepWait*=2
                 print url
                 print e
                 time.sleep(sleepWait)
@@ -197,6 +197,7 @@ def proc_Category(a,r):
             if node.type == 5 and node.name == 'dd':
                 pnode = None
                 tagsNode=None
+                averprice=0
                 for subnode in node.childNodes:
                     if subnode.type == 5 and subnode.name == 'p':
                         pnode = subnode
@@ -204,6 +205,14 @@ def proc_Category(a,r):
                         for ftag in subnode.childNodes:
                             if ftag.type==5 and ftag.name=='li' and ftag.attributes.get('class')=='tags':
                                 tagsNode=ftag
+                                break
+                    elif subnode.type==5 and subnode.name=='strong' and subnode.attributes.get('class')=='average':
+                        for ftag in subnode.childNodes:
+                            if ftag.type==4:
+                                try:
+                                    averprice=float(ftag.value)
+                                except Exception,e:
+                                    averprice=0
                                 break
 
                 tag_list=[]
@@ -225,12 +234,12 @@ def proc_Category(a,r):
                                 re_res = re.search('/shop/(\d+?)/map', hrefmap, re.IGNORECASE)
                                 if re_res != None:
                                     find_shopNum = re_res.group(1)
-                                    shopid_list.append((string.atoi(find_shopNum),','.join(tag_list)))
+                                    shopid_list.append((int(find_shopNum),','.join(tag_list),averprice))
                                     break
 
 
         for info in shopid_list:
-            conn.execute('insert or ignore into shopIds(id,tags) values(?,?)',info)
+            conn.execute('insert or ignore into shopIds(id,tags,aver) values(?,?,?)',info)
     conn.execute('update category_list set proced=1,time=CURRENT_TIMESTAMP where a=? and r=?',(a,r))
     conn.commit()
 
@@ -248,13 +257,12 @@ if __name__ == '__main__':
     except Exception,e:
         print e
     try:
-        conn.execute('create table shopIds(id int not null,tags varchar(255),proced int default 0,time TIMESTAMP default CURRENT_TIMESTAMP,primary key(id))')
+        conn.execute('create table shopIds(id int not null,tags varchar(255),aver float,proced int default 0,time TIMESTAMP default CURRENT_TIMESTAMP,primary key(id))')
     except Exception,e:
         print e
     conn.commit()
-    if len(sys.argv)>=2:
-        id=string.atoi(sys.argv[1])
-        ReadAllList(id)
+    #for id in range(1,200):
+     #   ReadAllList(id)
     cc=conn.cursor()
     cc.execute('select a,r from category_list where proced=0')
     all_list=cc.fetchall()
