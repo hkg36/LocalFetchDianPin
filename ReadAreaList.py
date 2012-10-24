@@ -48,31 +48,32 @@ def intToStr(Num, radix):
         Num = Num / radix
         if Num == 0:
             return _res
-def decodeDP_POI(C):
-        I = -1;
-        H = 0;
-        B = "";
-        J = len(C);
-        G = C[J - 1];
-        C = C[0: J - 1];
-        J -= 1
-        for E in range(0, J):
-            D = string.atoi(C[E], settings['cha']) - settings['add'];
-            if D >= settings['add']:
-                D = D - settings['plus']
-            B += intToStr (D, settings['cha'])
-            if D > H:
-                I = E;
-                H = D
-        A = string.atoi(B[0:I], settings['digi']);
-        F = string.atoi(B[I + 1:], settings['digi']);
-        L = float(A + F - string.atoi(G,36)) / 2;
-        K = float(F - L) / 100000;
-        L = float(L) / 100000;
-        return {
-            'lat': K,
-            'lng': L
-        }
+def decodeDP_POI(a):
+    b = -1
+    c = 0
+    d = ""
+    e = len(a)
+    g = ord(a[e - 1])
+    a = a[0:e-1]
+    e-=1
+    for f in xrange(e):
+        h = string.atoi(a[f], settings['cha']) - settings['add']
+        if h >= settings['add']:
+            h -= settings['plus']
+        d += intToStr(h,settings['cha'])
+        if h > c:
+            b = f
+            c = h
+
+    a = string.atoi(d[0:b],settings['digi'])
+    b = string.atoi(d[b + 1:], settings['digi'])
+    g = (a + b - g) / 2
+    b = float(b - g) / 1E5
+    return {
+        'lat': b,
+        'lng': float(g) / 1E5
+    }
+
 def getUrlDomTree(url,ref=None):
     request = urllib2.Request(url)
     request.add_header('Accept-encoding', 'gzip')
