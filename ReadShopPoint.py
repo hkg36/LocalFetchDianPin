@@ -88,6 +88,10 @@ if __name__ == '__main__':
         conn.execute('create table shop_list(shopId int not null,lat float not null ,lng float not null,address varchar(255),shopname varchar(255),time TIMESTAMP default CURRENT_TIMESTAMP,poi varchar(16),primary key(shopId))')
     except Exception,e:
         print e
+    try:
+        conn.execute('create view shopinfo as SELECT shopId , lat , lng , address , shopname , tags , aver FROM shop_list LEFT JOIN shopIds ON id = shopId')
+    except Exception,e:
+        print e
     conn.commit()
 
     try:

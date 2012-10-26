@@ -13,15 +13,15 @@ if __name__ == '__main__':
     shops=[]
     count=0
     for shopId,lat,lng,address,shopname,poi,tags,aver in dbcur:
-        new_pos=decode_mapbar.croodOffsetDecrypt(lng,lat)
-        if new_pos[0]<-180 or new_pos[0]>180 or new_pos[1]<-180 or new_pos[1]>180:
+        if lng<-180 or lng>180 or lat<-90 or lat>90:
             mongo_conn.dianpin.shop.update({'dianpin_id':shopId},{'$unset':{'loc':1}})
             count+=1
             continue
         tags=list(set(re.split(r'[\s/,]+',tags)))
-        oneline={'dianpin_id':shopId,'loc':{'lat':new_pos[1],'lng':new_pos[0]},'address':address,'shopname':shopname,
+        oneline={'dianpin_id':shopId,'loc':{'lat':lat,'lng':lng},'address':address,'shopname':shopname,
                  'dianpin_poi':poi,'dianpin_tag':tags,'aver_cost':aver}
-        shops.append(oneline)
+        mongo_conn.dianpin.shop.update({'dianpin_id':shopId},{'$set':oneline},upsert=True)
+        #shops.append(oneline)
         if len(shops)>500:
             #mongo_conn.dianpin.shop.insert(shops)
             shops=[]

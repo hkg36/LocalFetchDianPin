@@ -40,6 +40,8 @@ settings = {
             }
         }
 def intToStr(Num, radix):
+    if Num<0:
+        raise Exception('decode fail')
     _base = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     _res = ''
     while 1:
