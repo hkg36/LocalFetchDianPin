@@ -11,15 +11,17 @@ import math
 import MinRound
 import os
 import decode_mapbar
+import pylab
+import json
 
 db=sqlite3.connect('../fetchDianPin/AreaShop.db')
 dc=db.cursor()
 all_point=[]
-dc.execute('select tags,shopname,lat,lng from mastershop')
-for tags,shopname,lat,lng in dc:
+dc.execute('select shopId,tags,shopname,lat,lng from mastershop')
+for shopId,tags,shopname,lat,lng in dc:
     tags=tags.split(',')
     newp=decode_mapbar.croodOffsetDecrypt(lng,lat)
-    all_point.append({'name':shopname,'point':(newp[1],newp[0]),'tags':tags})
+    all_point.append({'name':shopname,'point':(newp[1],newp[0]),'tags':tags,'shopid':shopId})
 dc.close()
 
 #猜测初始中心，选择某些点作为中心，这些点周围的点属于这些中心
@@ -60,16 +62,16 @@ def DisPoint(a,b):
     return math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2)
 while True:
     #合并过于接近的中心
-    to_remove_point=[]
-    for pointindex in xrange(len(all_point)):
-        point=all_point[pointindex]
-        for testpindex in xrange(pointindex+1,len(all_point)):
-            testp=all_point[testpindex]
-            if DisPoint(point['point'],testp['point'])<(MIN_DIS/2):
-                to_remove_point.append(point)
+    to_remove_center=[]
+    for centerindex in xrange(len(centers)):
+        c=centers[centerindex]
+        for testpindex in xrange(centerindex+1,len(centers)):
+            testp=centers[testpindex]
+            if DisPoint(c['point'],testp['point'])<(MIN_DIS/2):
+                to_remove_center.append(c)
                 break
-    for point in to_remove_point:
-        all_point.remove(point)
+    for c in to_remove_center:
+        centers.remove(c)
 
     #计算当前中心对应的点
     for point in all_point:
@@ -94,9 +96,17 @@ while True:
             rc=mr.Run(c_pt_L)
             center_dis=DisPoint(rc,center['point'])
             center['point']=rc
-            if center_dis>0.002:
+            if center_dis>(MIN_DIS/4):
                 print center_dis
                 re_run=True
+    #删除没有点的中心
+    to_remove_center=[]
+    for centerindex in xrange(len(centers)):
+        c=centers[centerindex]
+        if len(c['ls'])==0:
+            to_remove_center.append(c)
+    for c in to_remove_center:
+        centers.remove(c)
     print '-------------------'
     if re_run==False:
         break
@@ -105,6 +115,7 @@ while True:
 
 for center in centers:
     print center['point'],len(center['ls'])
+    ls=center['ls']
     all_tags={}
     for c_p in center['ls']:
         for p_tag in c_p['tags']:
@@ -121,15 +132,38 @@ for center in centers:
         if all_tags[tag]>max_tag_count:
             max_tag_count=all_tags[tag]
             max_tag=tag
-    center['tag']=max_tag
+    if max_tag!=None:
+        center['tag']=max_tag
+    else:
+        center['tag']=ls[0]['name']
+    if len(centers)==1:
+        center['centershopid']=ls[0]['shopid']
+    else:
+        mindis=1e5
+        mindisshopid=0
+        for cs in ls:
+            dis=DisPoint(center['point'],cs['point'])
+            if dis<mindis:
+                mindis=dis
+                mindisshopid=cs['shopid']
+        center['centershopid']=mindisshopid
+
+for center in centers:
+    cir = pylab.Circle((center['point'][1],center['point'][0]), radius=center['point'][2],facecolor=(0,0,0),
+        edgecolor=(0.8,0,0), alpha =.5, fc='b')
+    pylab.gca().add_patch(cir)
+pylab.scatter([pt['point'][1] for pt in all_point],[pt['point'][0] for pt in all_point])
+pylab.axis('scaled')
+pylab.show()
 
 pointdbfile='../fetchDianPin/GeoPointList.db'
 if os.path.isfile(pointdbfile):
     os.remove(pointdbfile)
 db=sqlite3.connect(pointdbfile)
-db.execute('CREATE TABLE GeoWeiboPoint ( id INTEGER PRIMARY KEY,tag varchar(128),lat FLOAT,lng FLOAT,R FLOAT)')
+db.execute('CREATE TABLE GeoWeiboPoint ( id INTEGER PRIMARY KEY,tag varchar(128),lat FLOAT,lng FLOAT,R FLOAT,centershopid int)')
 db.commit()
 for center in centers:
     if len(center['ls'])>0:
-        db.execute('insert into GeoWeiboPoint(tag,lat,lng,R) values(?,?,?,?)',(center['tag'],center['point'][0],center['point'][1],center['point'][2]))
+        db.execute('insert into GeoWeiboPoint(tag,lat,lng,R,centershopid) values(?,?,?,?,?)',
+            (center['tag'],center['point'][0],center['point'][1],center['point'][2],center['centershopid']))
 db.commit()
