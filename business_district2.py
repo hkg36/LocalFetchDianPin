@@ -3,8 +3,8 @@
 查找地区商圈，根据点评网的综合商场位置数据，地理聚类出对应数据，以半径5公里为划分范围
 """
 #preprocess params
-MIN_DIS=0.03 #must in one group
-MAX_DIS=0.04  #maybe in one group
+MIN_DIS=0.09 #must in one group
+MAX_DIS=0.11  #maybe in one group
 
 import sqlite3
 import math
@@ -14,9 +14,11 @@ import decode_mapbar
 import pylab
 import json
 
+#db=sqlite3.connect('../fetchDianPin/dianpinData.db')
 db=sqlite3.connect('../fetchDianPin/AreaShop.db')
 dc=db.cursor()
 all_point=[]
+#dc.execute('select shopId,tags,shopname,lat,lng from shopinfo')
 dc.execute('select shopId,tags,shopname,lat,lng from mastershop')
 for shopId,tags,shopname,lat,lng in dc:
     tags=tags.split(',')
@@ -24,6 +26,7 @@ for shopId,tags,shopname,lat,lng in dc:
     all_point.append({'name':shopname,'point':(newp[1],newp[0]),'tags':tags,'shopid':shopId})
 dc.close()
 
+print 'data loaded'
 #猜测初始中心，选择某些点作为中心，这些点周围的点属于这些中心
 newcenter=[]
 all_point_copy=all_point[:]
@@ -44,6 +47,7 @@ while len(all_point_copy)>0:
             nc['l'].append(nowpt)
     for rm in point_rm:
         all_point_copy.remove(rm)
+print 'init center (%d)'%len(newcenter)
 
 centers=[]
 for c in newcenter:
