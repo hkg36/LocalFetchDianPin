@@ -15,7 +15,7 @@ if __name__ == '__main__':
             break
         for row in rows:
             print row
-            url='http://192.168.47.128:8081/geo/save?id=%d&lat=%f&lng=%f'%row
+            url='http://192.168.129.128:8081/geo/save?id=%d&lat=%f&lng=%f'%row
             print url
             request = urllib2.Request(url)
             for i in range(5):
@@ -26,4 +26,3 @@ if __name__ == '__main__':
                     break
                 except Exception,e:
                     print e
-                    time.sleep(5)
