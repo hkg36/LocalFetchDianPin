@@ -13,18 +13,31 @@ import os
 import decode_mapbar
 import pylab
 import json
+import codecs
 
+#从mysql导出 mysql -uroot -pmysql@xcj -h192.168.1.111 -e "use data_mining_xcj;select shop_id,shop_name,tags,address,lat,lng from shops where tags like '%综合商场%';" > out.txt
 #db=sqlite3.connect('../fetchDianPin/dianpinData.db')
-db=sqlite3.connect('../fetchDianPin/AreaShop.db')
-dc=db.cursor()
+#db=sqlite3.connect('../fetchDianPin/AreaShop.db')
+#dc=db.cursor()
 all_point=[]
 #dc.execute('select shopId,tags,shopname,lat,lng from shopinfo')
-dc.execute('select shopId,tags,shopname,lat,lng from mastershop')
+"""dc.execute('select shopId,tags,shopname,lat,lng from mastershop')
 for shopId,tags,shopname,lat,lng in dc:
     tags=tags.split(',')
     newp=decode_mapbar.croodOffsetDecrypt(lng,lat)
     all_point.append({'name':shopname,'point':(newp[1],newp[0]),'tags':tags,'shopid':shopId})
-dc.close()
+dc.close()"""
+
+file=codecs.open('data/out.txt','r','utf-8')
+for line in file:
+    datas=line.split('\t')
+    for i in xrange(len(datas)):
+        datas[i]=datas[i].strip()
+    tags=datas[2].split(',')
+    point=(float(datas[4]),float(datas[5]))
+    if point[0] and point[1]!=0:
+        all_point.append({'name':datas[1],'point':point,'tags':tags,'shopid':int(datas[0])})
+file.close()
 
 print 'data loaded'
 #猜测初始中心，选择某些点作为中心，这些点周围的点属于这些中心
@@ -152,6 +165,7 @@ for center in centers:
                 mindisshopid=cs['shopid']
         center['centershopid']=mindisshopid
 
+print 'end center count',len(centers)
 for center in centers:
     cir = pylab.Circle((center['point'][1],center['point'][0]), radius=center['point'][2],facecolor=(0,0,0),
         edgecolor=(0.8,0,0), alpha =.5, fc='b')

@@ -10,6 +10,7 @@ import html5lib
 import sqlite3
 import sys,os
 import time
+from xml.etree import ElementTree
 
 cookie=cookielib.CookieJar()
 opener=urllib2.build_opener(urllib2.HTTPCookieProcessor(cookie))
@@ -92,9 +93,8 @@ def getUrlDomTree(url,ref=None):
             encode = re_res.group(1)
         else:
             encode = None
-
-    parser = html5lib.HTMLParser()
-    return parser.parse(content, encoding=encode)
+    htmlparser2=html5lib.HTMLParser(tree=html5lib.treebuilders.getTreeBuilder("etree",ElementTree),namespaceHTMLElements=False)
+    return htmlparser2.parse(content, encoding=encode)
 
 def ReadHttpBody(response):
     cl = response.info().getheader('Content-length');
